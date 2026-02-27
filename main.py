@@ -133,9 +133,9 @@ def gradio_analyze(image_path: str | None, age: int) -> str:
     return analyze_image(image_path, age)
 
 
-with gr.Blocks(title="お子さま専用おしゃべり図鑑") as demo:
-    gr.Markdown("# お子さま専用おしゃべり図鑑")
-    gr.Markdown("散歩で見つけた花や虫の写真をアップロードすると、AIが子どもにわかる言葉で教えてくれます！")
+with gr.Blocks(title="ものしりずかん") as demo:
+    gr.Markdown("# ものしり ずかん")
+    gr.Markdown("おさんぽで見つけたいきものの写真をアップすると、AIがおしえてくれるよ！")
 
     with gr.Row():
         with gr.Column():
