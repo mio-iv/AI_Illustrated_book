@@ -10,9 +10,11 @@
 """
 
 import base64
+import io
 from pathlib import Path
 
 import gradio as gr
+from PIL import Image as PILImage
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -69,37 +71,27 @@ def get_age_params(age: int) -> dict:
         }
 
 
-def encode_image(image_path: str) -> tuple[str, str]:
-    """画像をbase64エンコードし、(data, media_type) を返す"""
-    suffix = Path(image_path).suffix.lower()
-    media_type_map = {
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
-        ".gif": "image/gif",
-        ".webp": "image/webp",
-    }
-    media_type = media_type_map.get(suffix, "image/jpeg")
-
-    with open(image_path, "rb") as f:
-        data = base64.standard_b64encode(f.read()).decode("utf-8")
-
-    return data, media_type
+def encode_pil_image(image: PILImage.Image) -> tuple[str, str]:
+    """PIL ImageをPNGとしてbase64エンコードし、(data, media_type) を返す"""
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    data = base64.standard_b64encode(buffer.getvalue()).decode("utf-8")
+    return data, "image/png"
 
 
-def analyze_image(image_path: str, age: int) -> str:
+def analyze_image(image: PILImage.Image, age: int) -> str:
     """
     画像を解析し、指定年齢向けの解説文を生成する。
 
     LangChainの構成:
         SystemMessage (PromptTemplate で年齢別に生成)
-            └─ HumanMessage (base64画像 + テキスト)
+            └─ HumanMessage (PIL Image → base64 + テキスト)
                 └─ ChatAnthropic (claude-sonnet-4-6 Vision)
     """
     age_params = get_age_params(age)
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(age=age, **age_params)
 
-    image_data, media_type = encode_image(image_path)
+    image_data, media_type = encode_pil_image(image)
 
     messages = [
         SystemMessage(content=system_prompt),
@@ -126,12 +118,12 @@ def analyze_image(image_path: str, age: int) -> str:
 
 
 # ── Gradio UI ───────────────────────────────────────────────────────────────
-def gradio_analyze(image_path: str | None, age: int) -> str:
+def gradio_analyze(image: PILImage.Image | None, age: int) -> str:
     """Gradio から呼び出されるハンドラ"""
-    if image_path is None:
+    if image is None:
         return "写真をアップロードしてください。"
     try:
-        return analyze_image(image_path, age)
+        return analyze_image(image, age)
     except Exception as e:
         return f"エラーが発生しました:\n{type(e).__name__}: {e}"
 
@@ -142,7 +134,7 @@ with gr.Blocks(title="ものしりずかん") as demo:
 
     with gr.Row():
         with gr.Column():
-            image_input = gr.Image(type="filepath", label="写真をアップロード")
+            image_input = gr.Image(type="pil", label="写真をアップロード")
             age_slider = gr.Slider(
                 minimum=1, maximum=18, step=1, value=4, label="お子さまの年齢"
             )
@@ -154,6 +146,7 @@ with gr.Blocks(title="ものしりずかん") as demo:
         fn=gradio_analyze,
         inputs=[image_input, age_slider],
         outputs=output,
+        api_name="predict",
     )
 
 demo.launch()
