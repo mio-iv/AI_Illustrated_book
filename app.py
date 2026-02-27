@@ -130,7 +130,10 @@ def gradio_analyze(image_path: str | None, age: int) -> str:
     """Gradio から呼び出されるハンドラ"""
     if image_path is None:
         return "写真をアップロードしてください。"
-    return analyze_image(image_path, age)
+    try:
+        return analyze_image(image_path, age)
+    except Exception as e:
+        return f"エラーが発生しました:\n{type(e).__name__}: {e}"
 
 
 with gr.Blocks(title="ものしりずかん") as demo:
@@ -153,5 +156,4 @@ with gr.Blocks(title="ものしりずかん") as demo:
         outputs=output,
     )
 
-if __name__ == "__main__":
-    demo.launch()
+demo.launch()
