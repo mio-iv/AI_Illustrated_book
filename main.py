@@ -135,7 +135,7 @@ def gradio_analyze(image_path: str | None, age: int) -> str:
 
 with gr.Blocks(title="ものしりずかん") as demo:
     gr.Markdown("# ものしり ずかん")
-    gr.Markdown("おさんぽで見つけたいきものの写真をアップすると、AIがおしえてくれるよ！")
+    gr.Markdown("おさんぽで見つけたいきものの写真をアップすると、AIがおしえてくれるよ！見つけた画像をアップしてね！")
 
     with gr.Row():
         with gr.Column():
